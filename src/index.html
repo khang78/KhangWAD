@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang ="en">
 <head>
-    <title>Web</title>
+    <title>Web Application air quality</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin=""
@@ -11,49 +11,113 @@
         crossorigin="">
     </script>
     <style>
-        #map {height: 180px;}
+        #map {height: 500px;}
+        .page {
+            margin: 40px;
+            padding: 40px;
+            background-color: #fff;
+            border: 3px solid #90EE90;
+            max-width: 500px;
+        
+
+        }
     </style>
-    <div id="map"></div>
 </head>
 <body>
     </div>
     <!--Screen 1-->
-    <div>
-        <h1>Webb</h1>
+    <div id="LoginScreen" class="page">
+        <h1>Web</h1>
         <form>
-            <input type="text" placeholder="username" required/><br> 
+            <input type="text" id="name" placeholder="username" required/><br> 
             <input type="password" placeholder="password" required/><br>
-            <button>Login</button>
+            <button onclick="setUsername()">Login</button>
         </form>
     </div>
     <!--Screen 2-->
-    <div>
-        <h1>Die Map</h1>
-        <div id="map" style="height: 300px"></div>
-        <script> 
-            var map = L.map('map').setView([52.5162, 13.3777], 13);
-            var marker = L.marker([52.5162, 13.3777]).addTo(map);
-            marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup();
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map);
-        </script>
-        <footer>
-            <p>Impressum</p> <p>Datenschutz</p>
-        </footer>
+    <div id="MainScreen" class="page">
+        <h1 id="welcome">Welcome </h1>
+        <div style="display: flex">
+            <div style="width: 30%">
+                <h2>Locations</h2>
+                <ul id="locationsList">
+                    <li id="loc1"></li>
+                    <li id="loc2"></li>
+                    <li id="loc3"></li>
+                </ul>
+            </div>
+            <div style="width: 70%">
+                <h2>Map</h2>
+                <div id="map" style="height: 300px"></div>
+            </div>
+        </div>
+        <button>Add</button>
+        <button>Logout</button>
     </div>
     <!--Screen 3-->
-    <div>
-        <button>Submit</button>
-        <button>Cancel</button>
+    <div id="AddScreen" class="page">
+        <h1>Add Screen</h1>
+        <form>
+            <input type="text" id="standort" placeholder="Standortname" required/><br> 
+            <input type="text" id="name" placeholder="Description"/><br>
+            <input type="text" id="name" placeholder="Street" required/><br>
+            <input type="text" id="name" placeholder="Zip" required/><br>
+            <input type="text" id="name" placeholder="State: Berlin or Brandenburg" required/><br>
+            <input type="text" id="name" placeholder="Lat" /><br>
+            <input type="text" id="name" placeholder="Lon"/><br>
+            <button>Submit</button>
+            <button>Cancel</button>
+        </form>
+    
     </div>
      <!--Screen 4-->
-     <div>
-        <button>Upate</button>
-        <button>Delete</button>
-        <button>Cancel</button>
+     <div id="UpdateScreen" class="page">
+        <h1> Update Screen</h1>
+        <form>
+            <input type="text" value="Frankfuter Allee" placeholder="Standortname" required/><br> 
+            <input type="text" value="" placeholder="Description"/><br>
+            <input type="text" value="Frankfuter Allee 150" placeholder="Street" required/><br>
+            <input type="text" value="10365" placeholder="Zip" required/><br>
+            <input type="text" value="Berlin" placeholder="State: Berlin or Brandenburg" required/><br>
+            <input type="text" value="52.512389" placeholder="Lat" /><br>
+            <input type="text" value="13.482639" placeholder="Lon"/><br>
+            <button>Upate</button>
+            <button>Delete</button>
+            <button>Cancel</button>
+        </form>
     </div>
+    <script> 
+        var map = L.map('map').setView([52.512428498642024, 13.482601391680298], 13);
+        var marker = L.marker([52.512428498642024, 13.482601391680298]).addTo(map);
     
+
+
+        marker.bindPopup("<b>Frankfuter Allee</b><br>[52.512389,13.482639]").openPopup();
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        function setUsername() {
+        var usernameInput = document.getElementById("name");
+        var username = usernameInput.value;
+        var welcomeUser = document.getElementById("welcome");
+        welcomeUser.textContent = "Welcome, " + username + "!";
+        console.log(username);
+        }
+
+        var location1 = {name:"Frankfurter Allee", coordinates: [52.512428498642024,13.482601391680298]};
+        var location2 = {name:"Mariendorfer Damm", coordinates: [52.43405258542502, 13.390609375371598]};
+        var location3 = {name:"Nansenstrasse", coordinates: [52.48976402379953, 13.430937180572444]};
+        var location1element = document.getElementById("loc1")
+        location1element.textContent=location1.name
+        var location2element = document.getElementById("loc2")
+        location2element.textContent=location2.name
+        var location3element = document.getElementById("loc3")
+        location3element.textContent=location3.name
+    </script>
+    <footer>
+        <p>Impressum</p> <p>Datenschutz</p>
+    </footer>
 </body>
 </html>
