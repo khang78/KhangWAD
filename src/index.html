@@ -17,9 +17,10 @@
             padding: 40px;
             background-color: #fff;
             border: 3px solid #90EE90;
-            max-width: 500px;
-        
-
+            max-width: 500px;        
+        }
+        .hide {
+            display: none;
         }
     </style>
 </head>
@@ -28,22 +29,26 @@
     <!--Screen 1-->
     <div id="LoginScreen" class="page">
         <h1>Web Application air quality</h1>
-        <form>
-            <input type="text" id="name" placeholder="username" required/><br> 
-            <input type="password" placeholder="password" required/><br>
-            <button onclick="setUsername()">Login</button>
+        <form onsubmit="signIn(); return false;">
+            <input type="text" id="username" placeholder="username*" required/><br> 
+            <input type="password" id="password" placeholder="password*" required/><br>
+            <button type="submit">Login</button>
         </form>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
     </div>
+
+
+
+
     <!--Screen 2-->
-    <div id="MainScreen" class="page">
+    <div id="MainScreen" class="page hide">
         <h1 id="welcome">Welcome </h1>
         <div style="display: flex">
             <div style="width: 30%">
                 <h2>Locations</h2>
                 <ul id="locationsList">
-                    <li id="loc1"></li>
-                    <li id="loc2"></li>
-                    <li id="loc3"></li>
                 </ul>
             </div>
             <div style="width: 70%">
@@ -51,73 +56,244 @@
                 <div id="map" style="height: 300px"></div>
             </div>
         </div>
-        <button>Add</button>
-        <button>Logout</button>
+        <button id="add" onclick="showAddAndHideMap()">Add</button>
+        <button onclick="showLoginAndHideMap()">Logout</button>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
     </div>
+
+
+
+
+
     <!--Screen 3-->
-    <div id="AddScreen" class="page">
+    <div id="AddScreen" class="page hide">
         <h1>Add Screen</h1>
-        <form>
-            <input type="text" id="standort" placeholder="Standortname" required/><br> 
-            <input type="text" id="name" placeholder="Description"/><br>
-            <input type="text" id="name" placeholder="Street" required/><br>
-            <input type="text" id="name" placeholder="Zip" required/><br>
-            <input type="text" id="name" placeholder="State: Berlin or Brandenburg" required/><br>
-            <input type="text" id="name" placeholder="Lat" /><br>
-            <input type="text" id="name" placeholder="Lon"/><br>
-            <button>Submit</button>
-            <button>Cancel</button>
+        <form id="addInput" onsubmit="submitLocation(); return false;">
+            <input type="text" id="standort" placeholder="Standortname*" required/><br> 
+            <input type="text" id="description" placeholder="Description"/><br>
+            <input  type="text" id="street" placeholder="Street*" required/><br>
+            <input type="text" id="zip" placeholder="Zip*" required/><br>
+            <input type="text" id="city" placeholder="City*" required/><br>
+            <select id="choices" name="State*" required><br>
+                <option>Berlin</option>
+                <option>Brandenburg</option>
+            </select><br>
+            <input type="text" id="lat" placeholder="Lat" /><br>
+            <input type="text" id="lon" placeholder="Lon"/><br>
+            <button onclick="showMapAndHideAdd()">Cancel</button>
+            <button type="submit">Submit</button>
         </form>
-    
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
     </div>
+
+
+
+
+
      <!--Screen 4-->
-     <div id="UpdateScreen" class="page">
+     <div id="UpdateScreen" class="page hide">
         <h1> Update Screen</h1>
         <form>
-            <input type="text" value="Frankfuter Allee" placeholder="Standortname" required/><br> 
+            <input type="text" value="Frankfuter Allee" placeholder="Standortname*" required/><br> 
             <input type="text" value="" placeholder="Description"/><br>
-            <input type="text" value="Frankfuter Allee 150" placeholder="Street" required/><br>
-            <input type="text" value="10365" placeholder="Zip" required/><br>
-            <input type="text" value="Berlin" placeholder="State: Berlin or Brandenburg" required/><br>
+            <input type="text" value="Frankfuter Allee 150" placeholder="Street*" required/><br>
+            <input type="text" value="10365" placeholder="Zip*" required/><br>
+            <input type="text" id="name" placeholder="City*" required/><br>
+            <select id="choices" name="State*" required><br>
+                <option>Berlin</option>
+                <option>Brandenburg</option>
+            </select><br>
             <input type="text" value="52.512389" placeholder="Lat" /><br>
             <input type="text" value="13.482639" placeholder="Lon"/><br>
             <button>Upate</button>
             <button>Delete</button>
             <button>Cancel</button>
         </form>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
     </div>
+
+
+
     <script> 
+        var userIsLoggedIn = false;
+        var currentUser;
         var map = L.map('map').setView([52.512428498642024, 13.482601391680298], 13);
         var marker = L.marker([52.512428498642024, 13.482601391680298]).addTo(map);
     
-
-
         marker.bindPopup("<b>Frankfuter Allee</b><br>[52.512389,13.482639]").openPopup();
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
+        var locations = [
+            { name: "Frankfurter Allee", coordinates: [52.512428498642024, 13.482601391680298] },
+            { name: "Mariendorfer Damm", coordinates: [52.43405258542502, 13.390609375371598] },
+            { name: "Nansenstrasse", coordinates: [52.48976402379953, 13.430937180572444] }
+        ];
+
+        function markLocationsOnMap() {
+            for (var i = 0; i < locations.length; i++) {
+                var location = locations[i];
+                var marker = L.marker(location.coordinates).addTo(map);
+                        
+                marker.bindPopup("<b>" + location.name + "</b><br>Coordinates: " + location.coordinates[0] + ", " + location.coordinates[1]);
+            }
+        }
+
         function setUsername() {
-        var usernameInput = document.getElementById("name");
+        var usernameInput = document.getElementById("username");
         var username = usernameInput.value;
         var welcomeUser = document.getElementById("welcome");
         welcomeUser.textContent = "Welcome, " + username + "!";
         console.log(username);
         }
 
-        var location1 = {name:"Frankfurter Allee", coordinates: [52.512428498642024,13.482601391680298]};
-        var location2 = {name:"Mariendorfer Damm", coordinates: [52.43405258542502, 13.390609375371598]};
-        var location3 = {name:"Nansenstrasse", coordinates: [52.48976402379953, 13.430937180572444]};
-        var location1element = document.getElementById("loc1")
-        location1element.textContent=location1.name
-        var location2element = document.getElementById("loc2")
-        location2element.textContent=location2.name
-        var location3element = document.getElementById("loc3")
-        location3element.textContent=location3.name
+        const admina ={
+            username: "admin",
+            password: "password",
+            role: "admin"
+        };
+        const normalo = {
+            username: "normalo",
+            password: "password",
+            role: "non-admin"
+        }
+
+        function signIn(){
+            var user = document.getElementById("username").value;
+            var pwr = document.getElementById("password").value;
+
+            if (user === "admin" && pwr === "password"){
+                currentUser = "admin";
+                hideLoginAndShowMap();
+            } else if (user === "normalo" && pwr === "password"){
+                currentUser = "normalo"
+                hideLoginAndShowMap();
+                var addButton = document.getElementById("add");
+                addButton.style.display = 'none';
+            } else {
+                alert("Incorrect username or password!!")
+            }
+
+        }
+        
+
+        const initScreensAddEventHandlers = function () {
+            if (userIsLoggedIn === false) {
+                showLoginAndHideMap();
+            } else {
+                hideLoginAndShowMap();
+            }
+        // What event are we interested in?: submit
+        // What is the event target?: form
+        // What is the event handler?: checkLogin
+        document.getElementById("loginForm").onsubmit = checkLogin;
+        }
+
+        function checkLogin(e) { 
+            // e - the event obj
+            // Why e.preventDefault()? 
+            // What is the default behavior for a "submit": 
+            // send request to server and get html back
+            e.preventDefault();
+
+            // get the values of the input fields
+            const loginEntered = document.getElementById("username").value;
+            const passwordEntered = document.getElementById("password").value;
+    
+            // check, if they are correct
+            if (admina.username === loginEntered &&
+                admina.password === passwordEntered) {
+                // correct:
+                userIsLoggedIn = true;
+                hideLoginAndShowMap()
+            } else {
+                // incorrect:
+                alert("Incorrect username or password!");
+                userIsLoggedIn = false;
+            }    
+        }
+        function showLoginAndHideMap () {
+            document.getElementById("LoginScreen").style.display = "block";
+            document.getElementById("MainScreen").style.display = "none";
+        }
+
+        function hideLoginAndShowMap() {
+            document.getElementById("LoginScreen").style.display = "none";
+            document.getElementById("MainScreen").style.display = "block";
+            locations.forEach(function (item) {
+                // Create a new list item
+                var listItem = document.createElement("li");
+                listItem.textContent = item.name;
+
+                // Add the list item to the locationList
+                var locationList = document.getElementById("locationsList");
+                locationList.appendChild(listItem);
+            })
+            markLocationsOnMap();
+            showMainScreen();
+        }
+
+        function showAddAndHideMap(){
+            document.getElementById("MainScreen").style.display = "none";
+            document.getElementById("AddScreen").style.display = "block";
+        }
+
+        function showMapAndHideAdd(){
+            document.getElementById("AddScreen").style.display = "none";
+            document.getElementById("addInput").reset();
+            document.getElementById("MainScreen").style.display = "block";
+            
+        }
+
+        function submitLocation() {
+            // Get the values from the form
+            var standort = document.getElementById("standort").value;
+            var coordinates = [parseFloat(document.getElementById("lat").value), parseFloat(document.getElementById("lon").value)];
+            var item = {
+                name: standort,
+                coordinates: coordinates
+            }
+
+            // Create a new list item
+            var listItem = document.createElement("li");
+            listItem.textContent = standort;
+
+            // Add the list item to the locationList
+            var locationList = document.getElementById("locationsList");
+            locationList.appendChild(listItem);
+            location.appendChild(item)
+            showMapAndHideAdd();
+        }
+        
+
+        function showMainScreen() {
+            // Show the MainScreen with appropriate UI elements based on user role
+            var mainScreen = document.getElementById("MainScreen");
+            mainScreen.classList.remove("hide");
+            var addButton = document.getElementById("add");
+            // Check user role and show/hide Add button accordingly
+            if (currentUser === 'admin') {
+                addButton.style.display = 'block';
+            } else {
+                addButton.style.display = 'none';
+            }
+        }
+        console.log(locations);
+        window.onload = function () {
+            markLocationsOnMap();
+            initScreensAddEventHandlers();
+        };
+        // What event are we interested in?: load
+        // What is the event target?: window
+        // What is the event handler?: initScreensAddEventHandlers
     </script>
-    <footer>
-        <p>Impressum</p> <p>Datenschutz</p>
-    </footer>
 </body>
 </html>
