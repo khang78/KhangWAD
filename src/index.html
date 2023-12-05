@@ -70,7 +70,6 @@
     <!--Screen 3-->
     <div id="AddScreen" class="page hide">
         <h1>Add Screen</h1>
-        <form id="addInput" onsubmit="submitLocation(); return false;">
             <input type="text" id="standort" placeholder="Standortname*" required/><br> 
             <input type="text" id="description" placeholder="Description"/><br>
             <input  type="text" id="street" placeholder="Street*" required/><br>
@@ -80,11 +79,8 @@
                 <option>Berlin</option>
                 <option>Brandenburg</option>
             </select><br>
-            <input type="text" id="lat" placeholder="Lat" /><br>
-            <input type="text" id="lon" placeholder="Lon"/><br>
             <button onclick="showMapAndHideAdd()">Cancel</button>
-            <button type="submit">Submit</button>
-        </form>
+            <button onclick="submitLocation()">Submit</button>
         <footer>
             <p>Impressum</p> <p>Datenschutz</p>
         </footer>
@@ -118,34 +114,77 @@
         </footer>
     </div>
 
+    <div id="DetailScreen" class="page hide">
+        <h1>Detail Screen</h1>
+        <div id="detailContent">
+            <p><strong>Standort:</strong> <input type="text" id="detailsStandort" required></input></p>
+            <p><strong>Description:</strong> <input type="text" id="detailsDescription"></input></p>
+            <p><strong>Street:</strong> <input type="text" id="detailsStreet"></input</p>
+            <p><strong>Zip:</strong> <input type="text" id="detailsZip"></input></p>
+            <p><strong>City:</strong> <input type="text" id="detailsCity"></input</p>
+            <p><strong>State:</strong> <input type="text" id="detailsChoices"></input></p>
+            <p><strong>Lat:</strong> <span id="detailsLat"></span></p>
+            <p><strong>Lon:</strong> <span id="detailsLon"></span></p>
+        </div>
+            <button id="delete" onclick="deleteLocation()">Delete</button>
+            <button id="update" onclick="updateLocation()">Update</button>
+            <button onclick="hideDetailShowMap()">Cancel</button>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
+    </div>
+
 
 
     <script> 
         var userIsLoggedIn = false;
         var currentUser;
         var map = L.map('map').setView([52.512428498642024, 13.482601391680298], 13);
-        var marker = L.marker([52.512428498642024, 13.482601391680298]).addTo(map);
+        var markerList = [
+        ]
     
-        marker.bindPopup("<b>Frankfuter Allee</b><br>[52.512389,13.482639]").openPopup();
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
         var locations = [
-            { name: "Frankfurter Allee", coordinates: [52.512428498642024, 13.482601391680298] },
-            { name: "Mariendorfer Damm", coordinates: [52.43405258542502, 13.390609375371598] },
-            { name: "Nansenstrasse", coordinates: [52.48976402379953, 13.430937180572444] }
+            { name: "Frankfurter Allee", coordinates: [52.512428498642024, 13.482601391680298], street: "f", zip: "1212", city: "berlin", choices: "berlin", description: "???"},
+            { name: "Mariendorfer Damm", coordinates: [52.43405258542502, 13.390609375371598], street: "", zip: "", city: "", choices: "", description: "" },
+            { name: "Nansenstrasse", coordinates: [52.48976402379953, 13.430937180572444], street: "", zip: "", city: "", choices: "", description: "" }
         ];
 
         function markLocationsOnMap() {
+            var locationList = document.getElementById("locationsList");
+            locationList.innerHTML = "";
             for (var i = 0; i < locations.length; i++) {
                 var location = locations[i];
                 var marker = L.marker(location.coordinates).addTo(map);
-                        
                 marker.bindPopup("<b>" + location.name + "</b><br>Coordinates: " + location.coordinates[0] + ", " + location.coordinates[1]);
+                map.addLayer(marker);
+                markerList.push(marker)
+                var listItem = document.createElement("li");
+                listItem.textContent = location.name;
+
+                listItem.addEventListener("click", createClickHandler(location));
+
+                locationList.appendChild(listItem);
+                if (location.marker) {
+                    // Wenn der Marker bereits vorhanden ist, aktualisiere die Position
+                    location.marker.setLatLng(location.coordinates);
+                } else {
+                    // Wenn der Marker nicht vorhanden ist, erstelle einen neuen Marker
+                    location.marker = L.marker(location.coordinates).addTo(map);
+                }
             }
         }
+        function createClickHandler(location) {
+            return function (event) {
+                console.log(location)
+                showDetailScreen(location);
+            };
+        } 
+
 
         function setUsername() {
         var usernameInput = document.getElementById("username");
@@ -191,31 +230,17 @@
             } else {
                 hideLoginAndShowMap();
             }
-        // What event are we interested in?: submit
-        // What is the event target?: form
-        // What is the event handler?: checkLogin
-        document.getElementById("loginForm").onsubmit = checkLogin;
         }
 
         function checkLogin(e) { 
-            // e - the event obj
-            // Why e.preventDefault()? 
-            // What is the default behavior for a "submit": 
-            // send request to server and get html back
             e.preventDefault();
-
-            // get the values of the input fields
             const loginEntered = document.getElementById("username").value;
             const passwordEntered = document.getElementById("password").value;
-    
-            // check, if they are correct
             if (admina.username === loginEntered &&
                 admina.password === passwordEntered) {
-                // correct:
                 userIsLoggedIn = true;
                 hideLoginAndShowMap()
             } else {
-                // incorrect:
                 alert("Incorrect username or password!");
                 userIsLoggedIn = false;
             }    
@@ -224,19 +249,48 @@
             document.getElementById("LoginScreen").style.display = "block";
             document.getElementById("MainScreen").style.display = "none";
         }
+        function showDetailScreen(selectedLocation) {
+            var updateButton = document.getElementById("update")
+            var deleteButton = document.getElementById("delete")
+            document.getElementById("detailsStandort").value = selectedLocation.name;
+            document.getElementById("detailsDescription").value = selectedLocation.description;
+            document.getElementById("detailsStreet").value = selectedLocation.street;
+            document.getElementById("detailsZip").value = selectedLocation.zip;
+            document.getElementById("detailsCity").value = selectedLocation.city;
+            document.getElementById("detailsChoices").value = selectedLocation.choice;
+            document.getElementById("detailsLat").textContent = selectedLocation.coordinates[0];
+            document.getElementById("detailsLon").textContent = selectedLocation.coordinates[1];
+        
+            document.getElementById("MainScreen").style.display = "none";
+            document.getElementById("DetailScreen").style.display = "block";
+            if (currentUser === "admin") {
+                updateButton.style.display = "block";
+                deleteButton.style.display = "block";
+            } else {
+                updateButton.style.display = "none";
+                deleteButton.style.display = "none";
+            }
+        }
+        function hideDetailShowMap() {
+            var list = document.getElementById('locationsList');
+            while (list.firstChild) {
+                list.removeChild(list.firstChild);
+            }
+            markLocationsOnMap()
+            document.getElementById("DetailScreen").style.display = "none";
+            document.getElementById("MainScreen").style.display = "block";
+            
+        }
 
         function hideLoginAndShowMap() {
             document.getElementById("LoginScreen").style.display = "none";
             document.getElementById("MainScreen").style.display = "block";
             locations.forEach(function (item) {
-                // Create a new list item
                 var listItem = document.createElement("li");
                 listItem.textContent = item.name;
-
-                // Add the list item to the locationList
                 var locationList = document.getElementById("locationsList");
                 locationList.appendChild(listItem);
-            })
+            });
             markLocationsOnMap();
             showMainScreen();
         }
@@ -248,52 +302,149 @@
 
         function showMapAndHideAdd(){
             document.getElementById("AddScreen").style.display = "none";
-            document.getElementById("addInput").reset();
             document.getElementById("MainScreen").style.display = "block";
             
         }
 
+
         function submitLocation() {
-            // Get the values from the form
-            var standort = document.getElementById("standort").value;
-            var coordinates = [parseFloat(document.getElementById("lat").value), parseFloat(document.getElementById("lon").value)];
-            var item = {
-                name: standort,
-                coordinates: coordinates
-            }
-
-            // Create a new list item
-            var listItem = document.createElement("li");
-            listItem.textContent = standort;
-
-            // Add the list item to the locationList
-            var locationList = document.getElementById("locationsList");
-            locationList.appendChild(listItem);
-            location.appendChild(item)
-            showMapAndHideAdd();
+            var name = document.getElementById("standort").value;
+            var address = document.getElementById("street").value + ", " + document.getElementById("city").value + ", " + document.getElementById("zip").value
+            var street = document.getElementById("street").value
+            var city = document.getElementById("city").value
+            var zip =  document.getElementById("zip").value
+            var choice =  document.getElementById("choices").value
+            var description = document.getElementById("description").value
+            geocodeAddress(name, address, street, city, zip, choice, description)
         }
         
 
         function showMainScreen() {
-            // Show the MainScreen with appropriate UI elements based on user role
             var mainScreen = document.getElementById("MainScreen");
             mainScreen.classList.remove("hide");
             var addButton = document.getElementById("add");
-            // Check user role and show/hide Add button accordingly
             if (currentUser === 'admin') {
                 addButton.style.display = 'block';
             } else {
                 addButton.style.display = 'none';
             }
         }
-        console.log(locations);
+
+        function geocodeAddress(name, address, street, city, zip, choice, description) {
+            return new Promise((resolve, reject) => {
+                console.log("checking address: " + address)
+                var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
+
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            var result = data[0];
+                            var lat = result.lat;
+                            var lon = result.lon;
+                            var coordinates = [lat, lon]
+                            var locationItem = {
+                                name: name,
+                                coordinates: coordinates,
+                                street: street,
+                                city: city,
+                                zip: zip,
+                                choice: choice,
+                                description: description
+                            }
+                            locations.push(locationItem)
+                            var newMarker = L.marker(locationItem.coordinates).addTo(map);
+                            newMarker.bindPopup("<b>" + locationItem.name + "</b><br>Coordinates: " + locationItem.coordinates[0] + ", " + locationItem.coordinates[1]);
+                            map.addLayer(newMarker);
+                            markerList.push(newMarker)
+                            // Create a new list item
+                            var listItem = document.createElement("li");
+                            listItem.textContent = locations[locations.length - 1].name;
+                            // Add the list item to the locationList
+                            listItem.addEventListener("click", createClickHandler(locationItem));
+                            var locationList = document.getElementById("locationsList");
+                            locationList.appendChild(listItem);
+                            showMapAndHideAdd();
+                        } else {
+                            alert("There was an error finding the address.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                    });
+                    resolve("geocoding completed");
+             });
+        }
+        function deleteLocation() {
+            var locationList = document.getElementById("locationsList");
+            var selectedLocation = document.getElementById("detailsStandort").value;
+            var removeLoc = locations.findIndex(function (location) {
+                return location.name === selectedLocation;
+            });
+            map.removeLayer(markerList[removeLoc]);
+            locations =locations.filter(item => item.name !== selectedLocation);
+            
+            var listItemToRemove = Array.from(locationList.children).find(function (item) {
+                return item.textContent === selectedLocation;
+            });
+            if (listItemToRemove) {
+                locationList.removeChild(listItemToRemove);
+            }
+            console.log(locations)
+            hideDetailShowMap();
+        }
+
+        function updateLocation() {
+            var lat = document.getElementById("detailsLat").value;
+            var locationIndex = locations.findIndex(function (location) {
+                return location.lat === lat;
+            });
+            var name = document.getElementById("detailsStandort").value;
+            var description = document.getElementById("detailsDescription").value;
+            var street = document.getElementById("detailsStreet").value;
+            var zip = document.getElementById("detailsZip").value;
+            var city = document.getElementById("detailsCity").value;
+            var choice = document.getElementById("detailsChoices").value;
+            var address = street + ", " + zip + ", " + city
+            var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var result = data[0];
+                        var lat = result.lat;
+                        var lon = result.lon;
+                        var coordinates = [lat, lon]
+                        var locationItem = {
+                            name: name,
+                            coordinates: coordinates,
+                            street: street,
+                            city: city,
+                            zip: zip,
+                            choice: choice,
+                            description: description
+                        }
+                        locations[locationIndex] = locationItem
+                        var newMarker = L.marker(locationItem.coordinates).addTo(map);
+                        newMarker.bindPopup("<b>" + locationItem.name + "</b><br>Coordinates: " + locationItem.coordinates[0] + ", " + locationItem.coordinates[1]);
+                        map.addLayer(newMarker);
+                        markerList.push(newMarker)
+                        console.log(locations)
+                        hideDetailShowMap()
+                    } else {
+                        alert("There was an error finding the address.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+                
         window.onload = function () {
             markLocationsOnMap();
             initScreensAddEventHandlers();
         };
-        // What event are we interested in?: load
-        // What is the event target?: window
-        // What is the event handler?: initScreensAddEventHandlers
     </script>
 </body>
 </html>
