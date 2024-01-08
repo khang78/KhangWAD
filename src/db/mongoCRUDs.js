@@ -13,32 +13,59 @@ function MongoCRUDs (db_name, uri) {
     this.uri = uri;
 } 
 
-MongoCRUDs.prototype.findOneUser  = async function(uNameIn, passwdIn) {
+
+MongoCRUDs.prototype.findAllUsers  = async function() {
   const client = new MongoClient(uri);
-  try {
+  try {  
     const database = client.db(db_name);
-    const users = database.collection('users');
-    const query = {username: uNameIn, password: passwdIn};
-    const doc = await users.findOne(query);
-    if (doc) {
-      delete doc.password;
+    const users = database.collection('Users');
+    const query = {};
+    const cursor = users.find(query);
+    // Print a message if no documents were found
+    if ((await users.countDocuments(query)) === 0) {
+      console.log("No documents found!");
+      return null;
     }
-    return doc;
+    let docs = new Array();
+    for await (const doc of cursor) {
+      delete doc.password;
+      docs.push(doc);
+    }
+    return docs;
   } finally {
     // Ensures that the client will close when finished and on error
     await client.close();
   }
 };
 
-MongoCRUDs.prototype.findAllUsers  = async function() {
+MongoCRUDs.prototype.loginUser  = async function(uNameIn, passwdIn) {
+  const client = new MongoClient(uri);
+  try {
+    const database = client.db(db_name);
+    const users = database.collection('Users');
+    const query = {username: uNameIn, password: passwdIn};
+    const user = await users.findOne(query);
+    if(user == null) {
+      return {};
+    } else {
+      delete user.password;
+      return user;
+    }
+  } finally {
+    // Ensures that the client will close when finished and on error
+    await client.close();
+  }
+};
+
+MongoCRUDs.prototype.findAllLocations  = async function() {
   const client = new MongoClient(uri);
   try {  
     const database = client.db(db_name);
-    const users = database.collection('users');
+    const locations = database.collection('Locations');
     const query = {};
-    const cursor = users.find(query);
+    const cursor = locations.find(query);
     // Print a message if no documents were found
-    if ((await users.countDocuments(query)) === 0) {
+    if ((await locations.countDocuments(query)) === 0) {
       console.log("No documents found!");
       return null;
     }

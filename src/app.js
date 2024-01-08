@@ -1,7 +1,9 @@
 
 const express = require('express');
 const path = require('path');
+const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const locationsRouter = require('./routes/locations')
 
 let app = express();
 
@@ -11,8 +13,9 @@ app.use(express.json());
 // GET http://localhost:8000/ or GET http://localhost:8000/index.html 
 // returns the index.html in /public
 app.use(express.static(path.join(__dirname, '../public')));
-
+app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/locations', locationsRouter);
 
 // send "Not found" for all other 'paths'
 app.use(function(req, res) {
@@ -25,4 +28,4 @@ app.use(function(err, res) {
   res.status(err.status || 500).send('error' + err.message);
 });
 
-module.exports = app;
+module.exports = app

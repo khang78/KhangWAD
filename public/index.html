@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang ="en">
+<head>
+    <title>Web Application air quality</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin="">
+    </script>
+    <style>
+        #map {height: 500px;}
+        .page {
+            margin: 40px;
+            padding: 40px;
+            background-color: #fff;
+            border: 3px solid #90EE90;
+            max-width: 500px;        
+        }
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    </div>
+    <!--Screen 1-->
+    <div id="LoginScreen" class="page">
+        <h1>Web Application air quality</h1>
+        <form onsubmit="signIn(); return false;">
+            <input type="text" id="username" placeholder="username*" required/><br> 
+            <input type="password" id="password" placeholder="password*" required/><br>
+            <button type="submit">Login</button>
+        </form>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
+    </div>
+
+
+
+
+    <!--Screen 2-->
+    <div id="MainScreen" class="page hide">
+        <h1 id="welcome">Welcome </h1>
+        <div style="display: flex">
+            <div style="width: 30%">
+                <h2>Locations</h2>
+                <ul id="locationsList">
+                </ul>
+            </div>
+            <div style="width: 70%">
+                <h2>Map</h2>
+                <div id="map" style="height: 300px"></div>
+            </div>
+        </div>
+        <button id="add" onclick="showAddAndHideMap()">Add</button>
+        <button onclick="showLoginAndHideMap()">Logout</button>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
+    </div>
+
+
+
+
+
+    <!--Screen 3-->
+    <div id="AddScreen" class="page hide">
+        <h1>Add Screen</h1>
+            <input type="text" id="standort" placeholder="Standortname*" required/><br> 
+            <input type="text" id="description" placeholder="Description"/><br>
+            <input  type="text" id="street" placeholder="Street*" required/><br>
+            <input type="text" id="zip" placeholder="Zip*" required/><br>
+            <input type="text" id="city" placeholder="City*" required/><br>
+            <select id="choices" name="State*" required><br>
+                <option>Berlin</option>
+                <option>Brandenburg</option>
+            </select><br>
+            <button onclick="showMapAndHideAdd()">Cancel</button>
+            <button onclick="submitLocation()">Submit</button>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
+    </div>
+
+
+
+
+
+     <!--Screen 4-->
+     <div id="UpdateScreen" class="page hide">
+        <h1> Update Screen</h1>
+        <form>
+            <input type="text" value="Frankfuter Allee" placeholder="Standortname*" required/><br> 
+            <input type="text" value="" placeholder="Description"/><br>
+            <input type="text" value="Frankfuter Allee 150" placeholder="Street*" required/><br>
+            <input type="text" value="10365" placeholder="Zip*" required/><br>
+            <input type="text" id="name" placeholder="City*" required/><br>
+            <select id="choices" name="State*" required><br>
+                <option>Berlin</option>
+                <option>Brandenburg</option>
+            </select><br>
+            <input type="text" value="52.512389" placeholder="Lat" /><br>
+            <input type="text" value="13.482639" placeholder="Lon"/><br>
+            <button>Upate</button>
+            <button>Delete</button>
+            <button>Cancel</button>
+        </form>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
+    </div>
+
+    <div id="DetailScreen" class="page hide">
+        <h1>Detail Screen</h1>
+        <div id="detailContent">
+            <p><strong>Standort:</strong> <input type="text" id="detailsStandort" required></input></p>
+            <p><strong>Description:</strong> <input type="text" id="detailsDescription"></input></p>
+            <p><strong>Street:</strong> <input type="text" id="detailsStreet" required></input</p>
+            <p><strong>Zip:</strong> <input type="text" id="detailsZip" required></input></p>
+            <p><strong>City:</strong> <input type="text" id="detailsCity"   required></input</p>
+            <p><strong>State:</strong> <input type="text" id="detailsChoices" required></input></p>
+            <p><strong>Lat:</strong> <span id="detailsLat"></span></p>
+            <p><strong>Lon:</strong> <span id="detailsLon"></span></p>
+        </div>
+            <button id="delete" onclick="deleteLocation()">Delete</button>
+            <button id="update" onclick="updateLocation()">Update</button>
+            <button onclick="hideDetailShowMap()">Cancel</button>
+        <footer>
+            <p>Impressum</p> <p>Datenschutz</p>
+        </footer>
+    </div>
+
+
+    <script> 
+        var userIsLoggedIn = false;
+        var currentUser = {};
+        var map = L.map('map').setView([52.512428498642024, 13.482601391680298], 13);
+        var markerList = [
+        ]
+    
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        var locations = []
+
+        function markLocationsOnMap() {
+            var locationList = document.getElementById("locationsList");
+            locationList.innerHTML = "";
+            for (var i = 0; i < locations.length; i++) {
+                var location = locations[i];
+                var marker = L.marker(location.coordinates).addTo(map);
+                marker.bindPopup("<b>" + location.name + "</b><br>Coordinates: " + location.coordinates[0] + ", " + location.coordinates[1]);
+                map.addLayer(marker);
+                markerList.push(marker)
+                var listItem = document.createElement("li");
+                listItem.textContent = location.name;
+
+                listItem.addEventListener("click", createClickHandler(location));
+
+                locationList.appendChild(listItem);
+                if (location.marker) {
+                    // Wenn der Marker bereits vorhanden ist, aktualisiere die Position
+                    location.marker.setLatLng(location.coordinates);
+                } else {
+                    // Wenn der Marker nicht vorhanden ist, erstelle einen neuen Marker
+                    location.marker = L.marker(location.coordinates).addTo(map);
+                }
+            }
+        }
+        function createClickHandler(location) {
+            return function (event) {
+                console.log(location)
+                showDetailScreen(location);
+            };
+        } 
+
+
+        function setUsername() {
+        var usernameInput = document.getElementById("username");
+        var username = usernameInput.value;
+        var welcomeUser = document.getElementById("welcome");
+        welcomeUser.textContent = "Welcome, " + username + "!";
+        console.log(username);
+        }
+
+        function signIn(){
+            var user = document.getElementById("username").value;
+            var pwr = document.getElementById("password").value;
+            sendUserInfo(user, pwr)
+            console.log(currentUser)
+        }
+        
+        const initScreensAddEventHandlers = function () {
+            if (userIsLoggedIn === false) {
+                showLoginAndHideMap();
+            } else {
+                hideLoginAndShowMap();
+            }
+        }
+
+        function showLoginAndHideMap () {
+            document.getElementById("LoginScreen").style.display = "block";
+            document.getElementById("MainScreen").style.display = "none";
+        }
+
+        function showDetailScreen(selectedLocation) {
+            var updateButton = document.getElementById("update")
+            var deleteButton = document.getElementById("delete")
+            document.getElementById("detailsStandort").value = selectedLocation.name;
+            document.getElementById("detailsDescription").value = selectedLocation.description;
+            document.getElementById("detailsStreet").value = selectedLocation.street;
+            document.getElementById("detailsZip").value = selectedLocation.zip;
+            document.getElementById("detailsCity").value = selectedLocation.city;
+            document.getElementById("detailsChoices").value = selectedLocation.choice;
+            document.getElementById("detailsLat").textContent = selectedLocation.coordinates[0];
+            document.getElementById("detailsLon").textContent = selectedLocation.coordinates[1];
+        
+            document.getElementById("MainScreen").style.display = "none";
+            document.getElementById("DetailScreen").style.display = "block";
+            if (currentUser.username === "admin") {
+                updateButton.style.display = "block";
+                deleteButton.style.display = "block";
+            } else {
+                updateButton.style.display = "none";
+                deleteButton.style.display = "none";
+            }
+        }
+
+        function hideDetailShowMap() {
+            var list = document.getElementById('locationsList');
+            while (list.firstChild) {
+                list.removeChild(list.firstChild);
+            }
+            markLocationsOnMap()
+            document.getElementById("DetailScreen").style.display = "none";
+            document.getElementById("MainScreen").style.display = "block";
+            
+        }
+
+        async function hideLoginAndShowMap() {
+            await getLocations()
+            console.log(locations)
+            document.getElementById("LoginScreen").style.display = "none";
+            document.getElementById("MainScreen").style.display = "block";
+            var welcomeMessage = document.getElementById("welcome");
+            welcomeMessage.textContent = "Welcome, " + currentUser.username + "!";
+            locations.forEach(function (item) {
+                var listItem = document.createElement("li");
+                listItem.textContent = item.name;
+                var locationList = document.getElementById("locationsList");
+                locationList.appendChild(listItem);
+            });
+            markLocationsOnMap();
+            showMainScreen();
+        }
+
+        function showAddAndHideMap(){
+            document.getElementById("MainScreen").style.display = "none";
+            document.getElementById("AddScreen").style.display = "block";
+        }
+
+        function showMapAndHideAdd(){
+            document.getElementById("AddScreen").style.display = "none";
+            document.getElementById("MainScreen").style.display = "block";
+            
+        }
+
+
+        function submitLocation() {
+            var name = document.getElementById("standort").value;
+            var address = document.getElementById("street").value + ", " + document.getElementById("city").value + ", " + document.getElementById("zip").value
+            var street = document.getElementById("street").value
+            var city = document.getElementById("city").value
+            var zip =  document.getElementById("zip").value
+            var choice =  document.getElementById("choices").value
+            var description = document.getElementById("description").value
+            geocodeAddress(name, address, street, city, zip, choice, description)
+        }
+        
+
+        function showMainScreen() {
+            var mainScreen = document.getElementById("MainScreen");
+            mainScreen.classList.remove("hide");
+            var addButton = document.getElementById("add");
+            if (currentUser.username === 'admin') {
+                addButton.style.display = 'block';
+            } else {
+                addButton.style.display = 'none';
+            }
+        }
+
+        function geocodeAddress(name, address, street, city, zip, choice, description) {
+            return new Promise((resolve, reject) => {
+                console.log("checking address: " + address)
+                var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
+
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            var result = data[0];
+                            var lat = result.lat;
+                            var lon = result.lon;
+                            var coordinates = [lat, lon]
+                            var locationItem = {
+                                name: name,
+                                coordinates: coordinates,
+                                street: street,
+                                city: city,
+                                zip: zip,
+                                choice: choice,
+                                description: description
+                            }
+                            locations.push(locationItem)
+                            var newMarker = L.marker(locationItem.coordinates).addTo(map);
+                            newMarker.bindPopup("<b>" + locationItem.name + "</b><br>Coordinates: " + locationItem.coordinates[0] + ", " + locationItem.coordinates[1]);
+                            map.addLayer(newMarker);
+                            markerList.push(newMarker)
+                            // Create a new list item
+                            var listItem = document.createElement("li");
+                            listItem.textContent = locations[locations.length - 1].name;
+                            // Add the list item to the locationList
+                            listItem.addEventListener("click", createClickHandler(locationItem));
+                            var locationList = document.getElementById("locationsList");
+                            locationList.appendChild(listItem);
+                            showMapAndHideAdd();
+                        } else {
+                            alert("There was an error finding the address.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                    });
+                    resolve("geocoding completed");
+             });
+        }
+        function deleteLocation() {
+            var locationList = document.getElementById("locationsList");
+            var selectedLocation = document.getElementById("detailsStandort").value;
+            var removeLoc = locations.findIndex(function (location) {
+                return location.name === selectedLocation;
+            });
+            map.removeLayer(markerList[removeLoc]);
+            locations =locations.filter(item => item.name !== selectedLocation);
+            
+            var listItemToRemove = Array.from(locationList.children).find(function (item) {
+                return item.textContent === selectedLocation;
+            });
+            if (listItemToRemove) {
+                locationList.removeChild(listItemToRemove);
+            }
+            console.log(locations)
+            hideDetailShowMap();
+        }
+
+        function updateLocation() {
+            var lat = document.getElementById("detailsLat").value;
+            var locationIndex = locations.findIndex(function (location) {
+                return location.lat === lat;
+            });
+            var name = document.getElementById("detailsStandort").value;
+            var description = document.getElementById("detailsDescription").value;
+            var street = document.getElementById("detailsStreet").value;
+            var zip = document.getElementById("detailsZip").value;
+            var city = document.getElementById("detailsCity").value;
+            var choice = document.getElementById("detailsChoices").value;
+            var address = street + ", " + zip + ", " + city
+            var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var result = data[0];
+                        var lat = result.lat;
+                        var lon = result.lon;
+                        var coordinates = [lat, lon]
+                        var locationItem = {
+                            name: name,
+                            coordinates: coordinates,
+                            street: street,
+                            city: city,
+                            zip: zip,
+                            choice: choice,
+                            description: description
+                        }
+                        locations[locationIndex] = locationItem
+                        var newMarker = L.marker(locationItem.coordinates).addTo(map);
+                        newMarker.bindPopup("<b>" + locationItem.name + "</b><br>Coordinates: " + locationItem.coordinates[0] + ", " + locationItem.coordinates[1]);
+                        map.addLayer(newMarker);
+                        markerList.push(newMarker)
+                        console.log(locations)
+                        hideDetailShowMap()
+                    } else {
+                        alert("There was an error finding the address.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+                
+        window.onload = function () {
+            markLocationsOnMap();
+            initScreensAddEventHandlers();
+        };
+
+        function sendUserInfo(username, password) {
+            // Replace 'YOUR_SERVER_ENDPOINT' with the actual endpoint URL
+            const endpoint = 'http://localhost:8000/users';
+
+            // Construct the request body
+            const requestBody = JSON.stringify({ username, password });
+            console.log("creds:" + requestBody)
+
+            // Make a POST request to the server
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: requestBody,
+            })
+            .then(response => {
+                if (response.ok) {
+                    // If the response status is 200, hide login page and show main
+                    currentUser = requestBody
+                    hideLoginAndShowMap();
+                } else if (response.status === 401) {
+                    // If the response status is 401, alert "wrong credentials" and show login page
+                    alert("Wrong credentials");
+                } else {
+                    // If there is an error, alert "something wrong" and show login page
+                    alert("Something went wrong");
+                }
+            })
+            .catch(error => {
+                // If there is a network error, alert "something wrong" and show login page
+                alert("Something went wrong");
+            });
+        }
+
+        async function getLocations() {
+            const endpoint = 'http://localhost:8000/locations';
+            try {
+                    const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    locations = data
+                    console.log(locations);
+                } else {
+                    // If there is an error, alert "something wrong"
+                    alert("Something went wrong");
+                }
+            } catch (error) {
+                // If there is a network error, alert "something wrong"
+                alert("Something went wrong");
+            }
+        }
+    </script>
+</body>
+</html>
