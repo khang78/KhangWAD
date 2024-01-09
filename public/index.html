@@ -193,7 +193,6 @@
             var user = document.getElementById("username").value;
             var pwr = document.getElementById("password").value;
             sendUserInfo(user, pwr)
-            console.log(currentUser)
         }
         
         const initScreensAddEventHandlers = function () {
@@ -223,7 +222,7 @@
         
             document.getElementById("MainScreen").style.display = "none";
             document.getElementById("DetailScreen").style.display = "block";
-            if (currentUser.username === "admin") {
+            if (currentUser.role === "admin") {
                 updateButton.style.display = "block";
                 deleteButton.style.display = "block";
             } else {
@@ -245,11 +244,10 @@
 
         async function hideLoginAndShowMap() {
             await getLocations()
-            console.log(locations)
             document.getElementById("LoginScreen").style.display = "none";
             document.getElementById("MainScreen").style.display = "block";
             var welcomeMessage = document.getElementById("welcome");
-            welcomeMessage.textContent = "Welcome, " + currentUser.username + "!";
+            welcomeMessage.textContent = "Welcome, " + currentUser.name + "!";
             locations.forEach(function (item) {
                 var listItem = document.createElement("li");
                 listItem.textContent = item.name;
@@ -288,7 +286,7 @@
             var mainScreen = document.getElementById("MainScreen");
             mainScreen.classList.remove("hide");
             var addButton = document.getElementById("add");
-            if (currentUser.username === 'admin') {
+            if (currentUser.role === 'admin') {
                 addButton.style.display = 'block';
             } else {
                 addButton.style.display = 'none';
@@ -411,7 +409,7 @@
             initScreensAddEventHandlers();
         };
 
-        function sendUserInfo(username, password) {
+        async function sendUserInfo(username, password) {
             // Replace 'YOUR_SERVER_ENDPOINT' with the actual endpoint URL
             const endpoint = 'http://localhost:8000/users';
 
@@ -419,31 +417,28 @@
             const requestBody = JSON.stringify({ username, password });
             console.log("creds:" + requestBody)
 
-            // Make a POST request to the server
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: requestBody,
-            })
-            .then(response => {
+            try {
+                    const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: requestBody,
+                });
+
                 if (response.ok) {
-                    // If the response status is 200, hide login page and show main
-                    currentUser = requestBody
+                    const data = await response.json();
+                    currentUser = data
+                    console.log("Current body is:" + currentUser)
                     hideLoginAndShowMap();
-                } else if (response.status === 401) {
-                    // If the response status is 401, alert "wrong credentials" and show login page
-                    alert("Wrong credentials");
                 } else {
-                    // If there is an error, alert "something wrong" and show login page
+                    // If there is an error, alert "something wrong"
                     alert("Something went wrong");
                 }
-            })
-            .catch(error => {
-                // If there is a network error, alert "something wrong" and show login page
+            } catch (error) {
+                // If there is a network error, alert "something wrong"
                 alert("Something went wrong");
-            });
+            }
         }
 
         async function getLocations() {

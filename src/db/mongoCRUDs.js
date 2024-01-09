@@ -1,4 +1,5 @@
 const { MongoClient } = require("mongodb");
+const { ObjectId } = require('mongodb');
 
 // Replace DB_USER, DB_USER_PASSWD, DB_NAME here:
 const db_user = "waddatabase_khang";
@@ -80,6 +81,89 @@ MongoCRUDs.prototype.findAllLocations  = async function() {
     await client.close();
   }
 };
+
+MongoCRUDs.prototype.createNewLocation  = async function(props) {
+  const client = new MongoClient(uri);
+  try {  
+    const database = client.db(db_name);
+    const locations = database.collection('Locations');
+    const newLocation = await locations.insertOne(props)
+    if (newLocation.result.ok === 1) {
+      return newLocation; // Use insertedId instead of _id
+    } else {
+      throw new Error('Failed to insert location');
+    }
+  } catch (err) {
+    console.error('Error in createNewLocation:', err);
+    throw err; // Re-throw the error to propagate it to the calling function
+  } finally {
+    // Ensures that the client will close when finished and on error
+    await client.close();
+  }
+};
+
+MongoCRUDs.prototype.findLocation  = async function(id) {
+  console.log("Finding one")
+  const client = new MongoClient(uri);
+  try {
+    const database = client.db(db_name);
+    const locations = database.collection('Locations');
+    const objectId = new ObjectId(id);
+    const query = {_id: objectId};
+    const location = await locations.findOne(query);
+    if((await locations.countDocuments(query)) === 0) {
+      console.log("No Location Found!!!")
+    } else {
+      return location;
+    }
+  } finally {
+    // Ensures that the client will close when finished and on error
+    await client.close();
+  }
+};
+
+MongoCRUDs.prototype.updateLocation  = async function(id) {
+  console.log("Updating one")
+  const client = new MongoClient(uri);
+  try {
+    const database = client.db(db_name);
+    const locations = database.collection('Locations');
+    const objectId = new ObjectId(id);
+    const query = {_id: objectId};
+    const location = await locations.replaceOne(query, replaceDoc);
+    if(location.modifiedCount === 1) {
+      return location; 
+    } else {
+      throw new Error('Failed to update location');
+    }
+  } finally {
+    // Ensures that the client will close when finished and on error
+    await client.close();
+  }
+};
+
+MongoCRUDs.prototype.deleteLocation  = async function(id) {
+  console.log("Deleting one")
+  const client = new MongoClient(uri);
+  try {
+    const database = client.db(db_name);
+    const locations = database.collection('Locations');
+    console.log(id)
+    const objectId = new ObjectId(id);
+    console.log(objectId)
+    const query = {_id: objectId};
+    const location = await locations.deleteOne(query);
+    if(location.deletedCount === 1) {
+      console.log("Successfully deleted")
+    } else {
+      throw new Error('Failed to update location');
+    }
+  } finally {
+    // Ensures that the client will close when finished and on error
+    await client.close();
+  }
+};
+
 
 const mongoCRUDs = new MongoCRUDs(db_name, uri);
 

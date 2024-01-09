@@ -31,7 +31,7 @@ router.post('/', async function(req, res) {
   try {
     let userToLogin = req.body;  
     let user = await mongoCRUDs.loginUser(userToLogin.username, userToLogin.password);
-    console.log("This is the user " + user.username)
+    console.log("This is the user " + user)
     if (user.username == userToLogin.username) {
       res.status(200).json(user)
     } else {
