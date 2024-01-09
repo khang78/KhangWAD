@@ -83,16 +83,14 @@ MongoCRUDs.prototype.findAllLocations  = async function() {
 };
 
 MongoCRUDs.prototype.createNewLocation  = async function(props) {
+  console.log("Creating new...")
   const client = new MongoClient(uri);
   try {  
     const database = client.db(db_name);
     const locations = database.collection('Locations');
     const newLocation = await locations.insertOne(props)
-    if (newLocation.result.ok === 1) {
-      return newLocation; // Use insertedId instead of _id
-    } else {
-      throw new Error('Failed to insert location');
-    }
+    return newLocation; // Use insertedId instead of _id
+
   } catch (err) {
     console.error('Error in createNewLocation:', err);
     throw err; // Re-throw the error to propagate it to the calling function
@@ -103,7 +101,7 @@ MongoCRUDs.prototype.createNewLocation  = async function(props) {
 };
 
 MongoCRUDs.prototype.findLocation  = async function(id) {
-  console.log("Finding one")
+  console.log("Finding one...")
   const client = new MongoClient(uri);
   try {
     const database = client.db(db_name);
@@ -122,8 +120,8 @@ MongoCRUDs.prototype.findLocation  = async function(id) {
   }
 };
 
-MongoCRUDs.prototype.updateLocation  = async function(id) {
-  console.log("Updating one")
+MongoCRUDs.prototype.updateLocation  = async function(id, replaceDoc) {
+  console.log("Updating one...")
   const client = new MongoClient(uri);
   try {
     const database = client.db(db_name);
@@ -143,7 +141,7 @@ MongoCRUDs.prototype.updateLocation  = async function(id) {
 };
 
 MongoCRUDs.prototype.deleteLocation  = async function(id) {
-  console.log("Deleting one")
+  console.log("Deleting one...")
   const client = new MongoClient(uri);
   try {
     const database = client.db(db_name);

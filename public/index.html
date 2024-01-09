@@ -148,6 +148,7 @@
         }).addTo(map);
 
         var locations = []
+        var currentLocation = {};
 
         function markLocationsOnMap() {
             var locationList = document.getElementById("locationsList");
@@ -231,12 +232,16 @@
             }
         }
 
-        function hideDetailShowMap() {
+        async function hideDetailShowMap() {
             var list = document.getElementById('locationsList');
-            while (list.firstChild) {
-                list.removeChild(list.firstChild);
-            }
-            markLocationsOnMap()
+            await getLocations()
+            locations.forEach(function (item) {
+                var listItem = document.createElement("li");
+                listItem.textContent = item.name;
+                var locationList = document.getElementById("locationsList");
+                locationList.appendChild(listItem);
+            });
+            markLocationsOnMap();
             document.getElementById("DetailScreen").style.display = "none";
             document.getElementById("MainScreen").style.display = "block";
             
@@ -263,10 +268,17 @@
             document.getElementById("AddScreen").style.display = "block";
         }
 
-        function showMapAndHideAdd(){
+        async function showMapAndHideAdd(){
             document.getElementById("AddScreen").style.display = "none";
             document.getElementById("MainScreen").style.display = "block";
-            
+            await getLocations()
+            locations.forEach(function (item) {
+                var listItem = document.createElement("li");
+                listItem.textContent = item.name;
+                var locationList = document.getElementById("locationsList");
+                locationList.appendChild(listItem);
+            });
+            markLocationsOnMap();
         }
 
 
@@ -320,6 +332,7 @@
                             newMarker.bindPopup("<b>" + locationItem.name + "</b><br>Coordinates: " + locationItem.coordinates[0] + ", " + locationItem.coordinates[1]);
                             map.addLayer(newMarker);
                             markerList.push(newMarker)
+                            /*
                             // Create a new list item
                             var listItem = document.createElement("li");
                             listItem.textContent = locations[locations.length - 1].name;
@@ -327,6 +340,8 @@
                             listItem.addEventListener("click", createClickHandler(locationItem));
                             var locationList = document.getElementById("locationsList");
                             locationList.appendChild(listItem);
+                            */
+                            createLocation(locationItem)
                             showMapAndHideAdd();
                         } else {
                             alert("There was an error finding the address.");
@@ -338,22 +353,15 @@
                     resolve("geocoding completed");
              });
         }
+
         function deleteLocation() {
             var locationList = document.getElementById("locationsList");
             var selectedLocation = document.getElementById("detailsStandort").value;
             var removeLoc = locations.findIndex(function (location) {
                 return location.name === selectedLocation;
             });
-            map.removeLayer(markerList[removeLoc]);
-            locations =locations.filter(item => item.name !== selectedLocation);
-            
-            var listItemToRemove = Array.from(locationList.children).find(function (item) {
-                return item.textContent === selectedLocation;
-            });
-            if (listItemToRemove) {
-                locationList.removeChild(listItemToRemove);
-            }
-            console.log(locations)
+            var id = locations[3]._id
+            deleteLocationinBackend(id)
             hideDetailShowMap();
         }
 
@@ -370,7 +378,6 @@
             var choice = document.getElementById("detailsChoices").value;
             var address = street + ", " + zip + ", " + city
             var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
-
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -379,6 +386,12 @@
                         var lat = result.lat;
                         var lon = result.lon;
                         var coordinates = [lat, lon]
+                        var name = document.getElementById("detailsStandort").value;
+                        var description = document.getElementById("detailsDescription").value;
+                        var street = document.getElementById("detailsStreet").value;
+                        var zip = document.getElementById("detailsZip").value;
+                        var city = document.getElementById("detailsCity").value;
+                        var choice = document.getElementById("detailsChoices").value;
                         var locationItem = {
                             name: name,
                             coordinates: coordinates,
@@ -388,12 +401,8 @@
                             choice: choice,
                             description: description
                         }
-                        locations[locationIndex] = locationItem
-                        var newMarker = L.marker(locationItem.coordinates).addTo(map);
-                        newMarker.bindPopup("<b>" + locationItem.name + "</b><br>Coordinates: " + locationItem.coordinates[0] + ", " + locationItem.coordinates[1]);
-                        map.addLayer(newMarker);
-                        markerList.push(newMarker)
-                        console.log(locations)
+                        var id = locations[locationIndex]._id
+                        updateLocationinBackend(id, locationItem)
                         hideDetailShowMap()
                     } else {
                         alert("There was an error finding the address.");
@@ -455,6 +464,75 @@
                     const data = await response.json();
                     locations = data
                     console.log(locations);
+                } else {
+                    // If there is an error, alert "something wrong"
+                    alert("Something went wrong");
+                }
+            } catch (error) {
+                // If there is a network error, alert "something wrong"
+                alert("Something went wrong");
+            }
+        }
+
+        async function createLocation(location) {
+            const requestBody = JSON.stringify(location)
+            const endpoint = 'http://localhost:8000/locations';
+            try {
+                    const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: requestBody,
+                });
+                if (response.ok) {
+                    console.log("ok");
+                } else {
+                    // If there is an error, alert "something wrong"
+                    alert("Something went wrong");
+                }
+            } catch (error) {
+                // If there is a network error, alert "something wrong"
+                alert("Something went wrong");
+            }
+        }
+
+        async function deleteLocationinBackend(id) {
+            const endpoint = 'http://localhost:8000/locations/' + id;
+            try {
+                    const response = await fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                if (response.ok) {
+                    console.log("Deleted");
+                } else {
+                    // If there is an error, alert "something wrong"
+                    alert("Something went wrong");
+                }
+            } catch (error) {
+                // If there is a network error, alert "something wrong"
+                alert("Something went wrong");
+            }
+        }
+
+        async function updateLocationinBackend(id, location) {
+            console.log("Updating loc with ")
+            console.log(location)
+            const requestBody = JSON.stringify(location)
+            const endpoint = 'http://localhost:8000/locations/' + id;
+            try {
+                    const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: requestBody,
+                });
+                if (response.ok) {
+                    console.log("ok");
                 } else {
                     // If there is an error, alert "something wrong"
                     alert("Something went wrong");
